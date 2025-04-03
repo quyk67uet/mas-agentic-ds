@@ -3,7 +3,6 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 from dotenv import load_dotenv
 
-# Load environment variables
 load_dotenv()
 
 class DatabaseConnector:
@@ -43,7 +42,6 @@ class DatabaseConnector:
             cursor = connection.cursor()
             cursor.execute(query, params)
             
-            # Check if the query is a SELECT
             if query.lower().strip().startswith('select'):
                 results = cursor.fetchall()
                 cursor.close()
@@ -99,6 +97,3 @@ class DatabaseConnector:
         result = self.execute_query(query, params)
         return result[0]['submission_id'] if result else None
 
-# Example usage:
-# db = DatabaseConnector()
-# student_history = db.fetch_student_history(1) 

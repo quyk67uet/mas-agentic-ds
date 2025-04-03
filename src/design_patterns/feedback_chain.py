@@ -66,11 +66,9 @@ class FormatCheckHandler(FeedbackHandler):
         """
         Check and fix feedback format
         """
-        # Check if the feedback has the required fields
         if not isinstance(feedback, dict):
             feedback = {"overall_feedback": str(feedback)}
         
-        # Ensure required fields exist
         if "overall_score" not in feedback:
             feedback["overall_score"] = 0.0
             
@@ -99,18 +97,14 @@ class ContentEnhancementHandler(FeedbackHandler):
         """
         Enhance feedback content
         """
-        # Add structure and clarity to overall feedback
         overall_feedback = feedback.get("overall_feedback", "")
         
-        # Add a title if not present
         if not overall_feedback.startswith("# ") and not overall_feedback.startswith("## "):
             feedback["overall_feedback"] = f"## Overall Assessment\n\n{overall_feedback}"
         
-        # Structure the detailed feedback
         detailed_feedback = feedback.get("detailed_feedback", {})
         
         for criterion, criterion_feedback in detailed_feedback.items():
-            # Add section headers to criteria feedback
             if not criterion_feedback.startswith("# ") and not criterion_feedback.startswith("## "):
                 detailed_feedback[criterion] = f"### {criterion.replace('_', ' ').title()}\n\n{criterion_feedback}"
         
@@ -151,7 +145,6 @@ class PersonalizationHandler(FeedbackHandler):
         # Add personalized context based on student history
         overall_feedback = feedback.get("overall_feedback", "")
         
-        # Check for improvement or regression
         if "submissions" in self.student_history and len(self.student_history["submissions"]) > 1:
             current_score = feedback.get("overall_score", 0)
             previous_scores = [sub.get("overall", 0) for sub in self.student_history["submissions"]]

@@ -76,7 +76,6 @@ class ReflectionObserver(AgentObserver):
             data: Data associated with the event
         """
         if event_type == "agent_output":
-            # Check if reflection is needed based on confidence score
             confidence = data.get("confidence", 1.0)
             
             if confidence < self.reflection_threshold:
@@ -89,7 +88,6 @@ class ReflectionObserver(AgentObserver):
                     "subject": subject
                 }
                 
-                # If a callback is provided, execute it
                 if self.reflection_callback:
                     self.reflection_callback(reflection_data)
 

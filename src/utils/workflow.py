@@ -6,8 +6,6 @@ from langgraph.graph.message import AnyMessage, add_messages
 from langgraph.prebuilt import ToolNode
 from langgraph.types import interrupt
 import json
-
-# Import this for our reducer function
 from operator import itemgetter
 
 from src.design_patterns.agent_factory import AgentFactory
@@ -19,7 +17,7 @@ from src.utils.transcript_processor import get_transcript_from_json
 def take_last(current_value: Any, new_value: Any) -> Any:
     return new_value
 
-# Define the state schema for the workflow - properly inheriting from MessagesState
+# Define the state schema for the workflow 
 class IELTSAssessmentState(MessagesState, total=False):
     transcript: Annotated[Optional[str], take_last]
     student_id: Annotated[Optional[int], take_last]
@@ -58,7 +56,6 @@ def create_assessment_workflow(model_name: str = "gpt-4") -> StateGraph:
     Returns:
         A StateGraph instance
     """
-    # Use the TypedDict class instead of a direct dictionary
     workflow = StateGraph(IELTSAssessmentState)
     
     # Create agents via factory
@@ -82,25 +79,20 @@ def create_assessment_workflow(model_name: str = "gpt-4") -> StateGraph:
         Extract transcript from the input JSON
         """
         try:
-            # Process messages to get transcript
             if state.get("transcript") is None:
                 for message in state.get("messages", []):
-                    # Use attribute access instead of dictionary-style access
                     if hasattr(message, 'content') and isinstance(message.content, str):
                         try:
-                            # Try to parse as JSON
                             json_data = json.loads(message.content)
                             transcript = get_transcript_from_json(json_data)
                             if transcript:
                                 state["transcript"] = transcript
                                 break
                         except json.JSONDecodeError:
-                            # Not a JSON, check if it's a transcript directly
-                            if len(message.content) > 100:  # Assume it's a transcript if long enough
+                            if len(message.content) > 100: 
                                 state["transcript"] = message.content
                                 break
             
-            # If still no transcript, return error
             if state.get("transcript") is None:
                 state["error"] = "No transcript found in input"
             
@@ -213,12 +205,11 @@ def create_assessment_workflow(model_name: str = "gpt-4") -> StateGraph:
                 submission_id = feedback_agent.save_to_database(
                     student_id,
                     result,
-                    None  # No teacher feedback
+                    None  
                 )
                 if submission_id:
                     result["submission_id"] = submission_id
             
-            # Return state normally, no interrupt
             return state
         except Exception as e:
             state["error"] = f"Error generating feedback: {str(e)}"
@@ -259,7 +250,6 @@ def create_assessment_workflow(model_name: str = "gpt-4") -> StateGraph:
                 response += f"### {criterion_name}\n\n"
                 response += f"{feedback}\n\n"
             
-            # Add teacher feedback if available
             teacher_feedback = state.get("teacher_feedback")
             if teacher_feedback:
                 response += f"## Teacher's Additional Feedback\n\n{teacher_feedback}\n\n"
@@ -269,7 +259,6 @@ def create_assessment_workflow(model_name: str = "gpt-4") -> StateGraph:
             
         except Exception as e:
             state["error"] = f"Error creating final response: {str(e)}"
-            # Return a dict with the new message to append to messages list
             return {"messages": [{"role": "assistant", "content": f"Error: {str(e)}"}]}
     
     # Add nodes to the workflow
@@ -281,14 +270,14 @@ def create_assessment_workflow(model_name: str = "gpt-4") -> StateGraph:
     workflow.add_node("generate_feedback", generate_feedback)
     workflow.add_node("create_final_response", create_final_response)
     
-    # Define the workflow edges (updated to skip human-in-the-loop)
+    # Define the workflow edges
     workflow.set_entry_point("extract_transcript")
     workflow.add_edge("extract_transcript", "assess_fluency_coherence")
     workflow.add_edge("assess_fluency_coherence", "assess_lexical_resource")
     workflow.add_edge("assess_lexical_resource", "assess_grammatical_range")
     workflow.add_edge("assess_grammatical_range", "assess_pronunciation")
     workflow.add_edge("assess_pronunciation", "generate_feedback")
-    workflow.add_edge("generate_feedback", "create_final_response") # Direct connection, no interrupt
+    workflow.add_edge("generate_feedback", "create_final_response") 
     workflow.add_edge("create_final_response", END)
     
     # Define a mapping of nodes to their next nodes in the normal flow
@@ -298,20 +287,18 @@ def create_assessment_workflow(model_name: str = "gpt-4") -> StateGraph:
         "assess_lexical_resource": "assess_grammatical_range",
         "assess_grammatical_range": "assess_pronunciation",
         "assess_pronunciation": "generate_feedback",
-        "generate_feedback": "create_final_response",  # Updated to go directly to create_final_response
+        "generate_feedback": "create_final_response", 
     }
     
-    # Define error handling edges - improved version to avoid KeyError: None
+    # Define error handling edges
     for node_name in ["extract_transcript", "assess_fluency_coherence", "assess_lexical_resource", 
                     "assess_grammatical_range", "assess_pronunciation", "generate_feedback"]:
         
-        # Create a separate condition function for each node to avoid closure issues
+
         def create_error_checker(node):
             def error_check(state: IELTSAssessmentState) -> str:
-                # Instead of returning None, return a string that represents the normal flow
                 if state.get("error") is not None:
                     return "error"
-                # Return a specific string we can map, not None
                 return "continue"
             return error_check
         
@@ -321,18 +308,16 @@ def create_assessment_workflow(model_name: str = "gpt-4") -> StateGraph:
         # Create the mapping dictionary
         mapping = {"error": "create_final_response"}
         
-        # Only add the continue mapping if there's a next node
         if next_node:
             mapping["continue"] = next_node
             
-        # Add conditional edge that routes to error handler or continues normal flow
         workflow.add_conditional_edges(
             node_name,
             create_error_checker(node_name),
             mapping
         )
     
-    # Compile the graph before returning
+    # Compile the graph
     compiled_workflow = workflow.compile()
     
     return compiled_workflow 

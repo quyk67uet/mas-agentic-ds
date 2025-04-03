@@ -33,13 +33,10 @@ class FeedbackAgent(AgentSubject):
         self.fetch_student_history = DatabaseToolProxy(db_connector.fetch_student_history)
         self.save_feedback = DatabaseToolProxy(db_connector.save_feedback)
         
-        # Initialize the feedback processing chain
         self._init_feedback_chain()
         
-        # Initialize the prompt template
         self._init_prompt_template()
         
-        # Initialize the output parser
         self.output_parser = JsonOutputParser()
     
     def _init_feedback_chain(self):
@@ -142,7 +139,6 @@ class FeedbackAgent(AgentSubject):
             # Create the prompt
             prompt = self.prompt_template.format_messages(**prompt_inputs)
             
-            # Get the response from the LLM
             response = self.llm.invoke(prompt)
             
             # Parse the response
@@ -288,22 +284,18 @@ class FeedbackAgent(AgentSubject):
             "overall_feedback": feedback.get("overall_feedback", "")
         }
         
-        # Get the response from the LLM
         prompt = reflection_prompt.format_messages(**prompt_inputs)
         response = self.llm.invoke(prompt)
         
         # Update the feedback with reflected improvements
         try:
-            # Try to parse as JSON first
             improved_feedback = json.loads(response.content)
-            # If successful, update the relevant fields
             if isinstance(improved_feedback, dict):
                 if "overall_feedback" in improved_feedback:
                     feedback["overall_feedback"] = improved_feedback["overall_feedback"]
                 if "detailed_feedback" in improved_feedback:
                     feedback["detailed_feedback"] = improved_feedback["detailed_feedback"]
         except:
-            # If not JSON, use the whole response as overall feedback
             feedback["overall_feedback"] = response.content
         
         # Update confidence after reflection
@@ -335,7 +327,6 @@ class FeedbackAgent(AgentSubject):
             overall_score = feedback.get("overall_score", 0)
             overall_feedback = feedback.get("overall_feedback", "")
             
-            # If there's teacher feedback, append it to the overall feedback
             if teacher_feedback:
                 overall_feedback += f"\n\n## Teacher's Additional Feedback\n\n{teacher_feedback}"
             

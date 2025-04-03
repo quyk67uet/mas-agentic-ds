@@ -11,18 +11,14 @@ def get_transcript_from_json(json_data: Dict[str, Any]) -> Optional[str]:
     Returns:
         Extracted transcript or None if not found
     """
-    # Check if this is the response.json format
     if "speech_score" in json_data and "transcript" in json_data["speech_score"]:
         return json_data["speech_score"]["transcript"]
     
-    # Check if transcript is directly available
     if "transcript" in json_data:
         return json_data["transcript"]
     
-    # Check if this is a nested structure
     for key, value in json_data.items():
         if isinstance(value, dict):
-            # Recursively search in nested dictionaries
             transcript = get_transcript_from_json(value)
             if transcript:
                 return transcript
@@ -80,7 +76,6 @@ def extract_word_scores_from_json(json_data: Dict[str, Any]) -> Dict[str, Any]:
         Dictionary of pronunciation statistics
     """
     try:
-        # Check if this is the response.json format
         if "speech_score" in json_data and "word_score_list" in json_data["speech_score"]:
             word_scores = json_data["speech_score"]["word_score_list"]
             

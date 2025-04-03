@@ -26,14 +26,11 @@ class CriteriaAgent(AgentSubject):
         self.criterion_name = criterion_name
         self.confidence = 1.0
         
-        # Create database connection through proxy
         db_connector = DatabaseConnector()
         self.fetch_student_history = DatabaseToolProxy(db_connector.fetch_student_history)
         
-        # Initialize the prompt template
         self._init_prompt_template()
         
-        # Initialize the output parser
         self.output_parser = JsonOutputParser()
     
     def _init_prompt_template(self):
@@ -148,7 +145,6 @@ class CriteriaAgent(AgentSubject):
             date = entry.get("submitted_at", "Unknown date")
             history_entries.append(f"- Date: {date}, Score: {score}")
         
-        # Combine into a single string
         history_summary = "Previous assessments for this criterion:\n" + "\n".join(history_entries)
         return history_summary
     
@@ -193,17 +189,14 @@ class CriteriaAgent(AgentSubject):
             "feedback": assessment.get("feedback", "")
         }
         
-        # Get the response from the LLM
         prompt = reflection_prompt.format_messages(**prompt_inputs)
         response = self.llm.invoke(prompt)
         
-        # Parse the response
         try:
             improved_assessment = self.output_parser.invoke(response.content)
             improved_assessment["confidence"] = 0.9  # Higher confidence after reflection
             return improved_assessment
         except:
-            # If parsing fails, return the original assessment
             return assessment
 
 

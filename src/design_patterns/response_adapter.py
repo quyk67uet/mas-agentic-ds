@@ -13,20 +13,16 @@ class ResponseAdapter:
         Adapt a response from an LLM into a standard format
         """
         try:
-            # Handle string responses that might be JSON
             if isinstance(response, str):
                 try:
                     response_dict = json.loads(response)
                     return ResponseAdapter._format_dict_response(response_dict)
                 except json.JSONDecodeError:
-                    # Not JSON, return as content
                     return {"content": response, "type": "text"}
             
-            # Handle dictionary responses
             elif isinstance(response, dict):
                 return ResponseAdapter._format_dict_response(response)
             
-            # Handle other types
             else:
                 return {"content": str(response), "type": "text"}
                 
@@ -39,20 +35,17 @@ class ResponseAdapter:
         """
         Format a dictionary response into the standard format
         """
-        # Check if it already has the expected format
         if "content" in response_dict and "type" in response_dict:
             return response_dict
         
         # Convert to standard format
         if "score" in response_dict and "feedback" in response_dict:
-            # It's likely a criteria agent response
             return {
                 "score": response_dict.get("score"),
                 "feedback": response_dict.get("feedback"),
                 "type": "assessment"
             }
         elif "overall_score" in response_dict and "overall_feedback" in response_dict:
-            # It's likely a feedback agent response
             return {
                 "overall_score": response_dict.get("overall_score"),
                 "overall_feedback": response_dict.get("overall_feedback"),
@@ -60,7 +53,6 @@ class ResponseAdapter:
                 "type": "feedback"
             }
         else:
-            # Unknown format, return as is with a type
             return {**response_dict, "type": "unknown"}
     
     @staticmethod
@@ -88,7 +80,6 @@ class ResponseAdapter:
         try:
             transcript = response_json.get("speech_score", {}).get("transcript", "")
             
-            # Extract word scores and other relevant data if needed
             word_scores = response_json.get("speech_score", {}).get("word_score_list", [])
             
             return {

@@ -10,15 +10,12 @@ from langchain_openai import ChatOpenAI
 from dotenv import load_dotenv
 from langchain_core.messages import HumanMessage
 
-# Import project modules
 from src.utils.workflow import create_assessment_workflow
 from src.utils.transcript_processor import get_transcript_from_json, extract_word_scores_from_json
 from src.database.db_connector import DatabaseConnector
 
-# Load environment variables
 load_dotenv()
 
-# Set page config
 st.set_page_config(
     page_title="LingLooma - IELTS Speaking Assessment",
     page_icon="🎤",
@@ -54,7 +51,6 @@ st.markdown("### AI-powered assessment for IELTS Speaking")
 # Sidebar
 st.sidebar.title("Assessment Options")
 
-# Check for OpenAI API key
 api_key = os.getenv("OPENAI_API_KEY")
 if not api_key or api_key == "your_openai_api_key":
     st.sidebar.warning("⚠️ OpenAI API key not set. Please add it to your .env file.")
@@ -65,16 +61,13 @@ else:
 model_options = ["gpt-3.5-turbo", "gpt-4", "gpt-4-turbo"]
 selected_model = st.sidebar.selectbox("Select LLM Model", model_options, index=1)
 
-# Add workflow visualization in sidebar
 st.sidebar.markdown("### Assessment Workflow")
 
-# Create workflow visualization using graphviz
 graph = graphviz.Digraph()
 graph.attr(rankdir='TB', size='8,8', ratio='fill')
 graph.attr('node', shape='box', style='filled', fillcolor='lightblue', fontname='Arial')
 graph.attr('edge', arrowsize='0.5')
 
-# Add nodes with different colors for different types
 graph.node('Input', 'Input Transcript', fillcolor='lightgreen')
 graph.node('FC', 'Fluency & Coherence\nAssessment', fillcolor='#add8e6')
 graph.node('LR', 'Lexical Resource\nAssessment', fillcolor='#add8e6')
@@ -83,7 +76,6 @@ graph.node('PR', 'Pronunciation\nAssessment', fillcolor='#add8e6')
 graph.node('FB', 'Generate Feedback', fillcolor='#ffb6c1')
 graph.node('FN', 'Final Assessment', fillcolor='#98fb98')
 
-# Add edges - remove Teacher Feedback node
 graph.edge('Input', 'FC')
 graph.edge('FC', 'LR')
 graph.edge('LR', 'GR')
@@ -91,10 +83,8 @@ graph.edge('GR', 'PR')
 graph.edge('PR', 'FB')
 graph.edge('FB', 'FN')
 
-# Add visualization to sidebar
 st.sidebar.graphviz_chart(graph)
 
-# Add explanation for the colors
 st.sidebar.markdown("""
 **Workflow stages:**
 - 🟢 Input data
@@ -103,13 +93,11 @@ st.sidebar.markdown("""
 - 🟩 Final assessment
 """)
 
-# Main layout
 col1, col2 = st.columns([2, 3])
 
 with col1:
     st.markdown("### Input")
     
-    # File upload
     uploaded_file = st.file_uploader("Upload speaking response JSON file", type=["json"])
     
     # Student ID input
@@ -167,14 +155,11 @@ with col1:
                     "error": None
                 }
                 
-                # Start the workflow - simplified to process the entire assessment at once
                 st.session_state.graph_state = st.session_state.workflow.invoke(inputs)
                 
-                # Check if there was an error
                 if st.session_state.graph_state.get("error"):
                     st.error(f"❌ Error during assessment: {st.session_state.graph_state['error']}")
                 
-                # Set assessment_completed directly since there's no human-in-the-loop now
                 if st.session_state.graph_state.get("feedback_result"):
                     st.session_state.feedback_result = st.session_state.graph_state["feedback_result"]
                     st.session_state.assessment_completed = True
@@ -183,19 +168,15 @@ with col1:
 with col2:
     st.markdown("### Assessment Results")
     
-    # Display assessment results - simplified to just show completed assessment since there's no "in progress" state
     if st.session_state.assessment_completed and st.session_state.feedback_result:
         st.success("✅ Assessment completed successfully!")
         
-        # Display final feedback
         feedback_result = st.session_state.feedback_result
         
         with st.expander("Assessment Results", expanded=True):
-            # Sidebar for score summary
             score_col1, score_col2 = st.columns([1, 3])
             
             with score_col1:
-                # Overall score with color based on score level
                 overall_score = feedback_result.get("overall_score", 0)
                 score_color = "#ff4b4b" if overall_score < 5 else "#faa307" if overall_score < 6.5 else "#0ec93e"
                 
@@ -206,7 +187,6 @@ with col2:
                 </div>
                 """, unsafe_allow_html=True)
                 
-                # Individual scores with visual indicators
                 st.markdown("### Criterion Scores")
                 
                 criteria = [
@@ -222,7 +202,6 @@ with col2:
                     st.markdown(f"**{name}**: {score} {stars}")
             
             with score_col2:
-                # Overall feedback in a nice box
                 st.markdown("### Summary Feedback")
                 st.markdown(f"""
                 <div style="background-color: #f0f2f6; padding: 15px; border-radius: 5px; border-left: 5px solid #4b8bbe;">
@@ -230,7 +209,6 @@ with col2:
                 </div>
                 """, unsafe_allow_html=True)
                 
-                # Detailed feedback in tabs
                 st.markdown("### Detailed Assessment")
                 detailed_feedback = feedback_result.get("detailed_feedback", {})
                 
@@ -249,14 +227,12 @@ with col2:
                         </div>
                         """, unsafe_allow_html=True)
                 
-                # Display problem words if available (only in pronunciation tab)
                 if st.session_state.problem_words:
                     with tabs[3]:  # Pronunciation tab
                         st.markdown("#### Problematic Words")
                         problem_df = pd.DataFrame(st.session_state.problem_words)
                         problem_df = problem_df.sort_values(by="score", ascending=True)
                         
-                        # Add color coding to the dataframe
                         def color_score(val):
                             color = "red" if val < 0.5 else "orange" if val < 0.7 else "green"
                             return f'background-color: {color}; color: white'
@@ -268,7 +244,6 @@ with col2:
         
         # Reset button
         if st.button("Start New Assessment"):
-            # Reset session state
             st.session_state.workflow = None
             st.session_state.transcript = None
             st.session_state.assessment_completed = False

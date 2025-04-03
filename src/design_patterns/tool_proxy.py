@@ -81,7 +81,6 @@ class DatabaseToolProxy(ToolProxy):
         """
         Validate database tool input
         """
-        # Example validation: Check if student_id is present and valid
         if 'student_id' in kwargs:
             student_id = kwargs['student_id']
             if not isinstance(student_id, (int, str)) or not str(student_id).strip():
